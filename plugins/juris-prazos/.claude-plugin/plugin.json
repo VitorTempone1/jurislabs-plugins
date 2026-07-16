@@ -1,0 +1,10 @@
+{
+  "name": "juris-prazos",
+  "description": "Calculadora de prazos processuais pelo CPC: dias uteis (art. 219), termo inicial (art. 224 §§2-3) e recesso forense (art. 220), com feriados nacionais/estaduais/forenses. E apoio, nunca substitui a conferencia oficial no PJe/autos.",
+  "version": "0.1.0",
+  "author": {
+    "name": "JurisLabs",
+    "url": "https://juristools.jurislabs.com.br"
+  },
+  "keywords": ["juridico", "prazo", "cpc", "advocacia", "brasil"]
+}

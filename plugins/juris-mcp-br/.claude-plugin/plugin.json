@@ -1,0 +1,16 @@
+{
+  "name": "juris-mcp-br",
+  "description": "MCP JurisLabs: fontes juridicas oficiais BR (DJEN, DataJud e LexML) direto no Claude. Consulta de publicacoes por OAB, andamento processual e legislacao. E apoio, nao substitui o PJe.",
+  "version": "0.1.0",
+  "author": {
+    "name": "JurisLabs",
+    "url": "https://juristools.jurislabs.com.br"
+  },
+  "keywords": ["juridico", "mcp", "djen", "datajud", "lexml", "cnj", "brasil"],
+  "mcpServers": {
+    "juris-mcp-br": {
+      "command": "uv",
+      "args": ["run", "--with", "mcp", "${CLAUDE_PLUGIN_ROOT}/server/server.py"]
+    }
+  }
+}

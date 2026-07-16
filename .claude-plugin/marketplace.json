@@ -1,0 +1,23 @@
+{
+  "name": "jurislabs",
+  "owner": {
+    "name": "JurisLabs",
+    "url": "https://juristools.jurislabs.com.br"
+  },
+  "metadata": {
+    "description": "Claude para advogados: skills e plugins que tiram a repeticao do dia do advogado. Curadoria da JurisLabs.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "juris-prazos",
+      "source": "./plugins/juris-prazos",
+      "description": "Calculadora de prazos processuais pelo CPC (dias uteis, recesso, feriados forenses). Apoio, nao substitui a conferencia no PJe."
+    },
+    {
+      "name": "juris-mcp-br",
+      "source": "./plugins/juris-mcp-br",
+      "description": "MCP com fontes juridicas oficiais BR: DJEN (publicacoes por OAB), DataJud (andamento) e LexML (legislacao). Primeiro MCP juridico focado no Brasil."
+    }
+  ]
+}
