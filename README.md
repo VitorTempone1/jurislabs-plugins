@@ -4,10 +4,15 @@ Marketplace de plugins do Claude Code com skills que tiram a repeticao do dia do
 
 ## Como instalar (Claude Code)
 ```
+# uma vez: instale o uv (https://astral.sh/uv) — os plugins rodam sob ele
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
 /plugin marketplace add VitorTempone1/jurislabs-plugins
 /plugin install juris-prazos@jurislabs
 ```
 Depois e so pedir em linguagem natural, ex.: "calcula o prazo de 15 dias dessa intimacao disponibilizada em 03/07, TJMG".
+
+> O `uv` e pre-requisito: o `juris-mcp-br` sobe o MCP com `uv run` e o `juris-prazos` usa `uv run` pra puxar os feriados (lib `holidays`) sozinho, sem mexer no Python do sistema.
 
 ## Plugins
 | Plugin | O que faz | Status |

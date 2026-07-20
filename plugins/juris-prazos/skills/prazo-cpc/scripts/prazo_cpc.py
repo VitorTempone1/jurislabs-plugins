@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.9"
+# dependencies = ["holidays>=0.100"]
+# ///
 """prazo_cpc.py - calcula prazo processual pelo CPC (dias uteis).
 
 Versao standalone e enxuta da logica do motor de intimacoes do JurisTools.

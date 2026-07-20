@@ -11,11 +11,13 @@ Calcula o vencimento de um prazo processual em dias uteis, a partir da data de d
 O calculo e **apoio, nao verdade final**. NUNCA afirme o prazo como oficial e SEMPRE feche com a ressalva de conferir no PJe/autos. Feriado municipal da comarca e portaria pontual do tribunal podem nao estar na base. Se o advogado nao informar tribunal/UF, avise que os feriados estaduais/facultativos (Carnaval, Corpus Christi, etc.) nao entraram e que o calculo saiu conservador.
 
 ## Como usar
-Rode o script `scripts/prazo_cpc.py`. Ele so precisa da stdlib; se a lib opcional `holidays` estiver instalada, entram os feriados nacionais/estaduais/facultativos (recomendado: `pip install holidays`).
+Rode o script com `uv run` (pre-requisito: ter o `uv` — https://docs.astral.sh/uv/). O script declara a dependencia `holidays` no cabecalho (PEP 723), entao o `uv` baixa e carrega os feriados nacionais/estaduais/facultativos sozinho, sem instalar nada no Python do sistema.
 
 ```bash
-python3 scripts/prazo_cpc.py --disp 2026-07-03 --dias 15 --tribunal TJMG --hoje 2026-07-15
+uv run scripts/prazo_cpc.py --disp 2026-07-03 --dias 15 --tribunal TJMG --hoje 2026-07-15
 ```
+
+Sem `uv`, da pra rodar com `python3 scripts/prazo_cpc.py ...`, mas ai os feriados so entram se a lib `holidays` estiver instalada no sistema (senao cai no calendario conservador: fins de semana + recesso, e AVISA).
 
 Parametros:
 - `--disp AAAA-MM-DD` (obrigatorio): data de disponibilizacao no Diario.
