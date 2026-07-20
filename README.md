@@ -5,7 +5,8 @@ Marketplace de plugins do Claude Code com skills que tiram a repeticao do dia do
 ## Como instalar (Claude Code)
 ```
 # uma vez: instale o uv (https://astral.sh/uv) — os plugins rodam sob ele
-curl -LsSf https://astral.sh/uv/install.sh | sh
+# (o "!" roda o comando no shell direto do Claude Code)
+! curl -LsSf https://astral.sh/uv/install.sh | sh
 
 /plugin marketplace add VitorTempone1/jurislabs-plugins
 /plugin install juris-prazos@jurislabs
