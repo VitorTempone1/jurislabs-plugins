@@ -3,15 +3,14 @@
 Marketplace de plugins do Claude Code com skills que tiram a repeticao do dia do advogado. Curadoria da JurisLabs. Este e o destino do QR code da palestra "Claude para advogados".
 
 ## Como instalar (Claude Code)
+Cole cada linha no Claude Code, uma de cada vez.
 ```
-# uma vez: instale o uv (https://astral.sh/uv) — os plugins rodam sob ele
-# (o "!" roda o comando no shell direto do Claude Code)
-! curl -LsSf https://astral.sh/uv/install.sh | sh
-
+!curl -LsSf https://astral.sh/uv/install.sh | sh
 /plugin marketplace add VitorTempone1/jurislabs-plugins
+/plugin install juris-mcp-br@jurislabs
 /plugin install juris-prazos@jurislabs
 ```
-Depois e so pedir em linguagem natural, ex.: "calcula o prazo de 15 dias dessa intimacao disponibilizada em 03/07, TJMG".
+Depois e so pedir em portugues, ex.: "vê minhas intimações de hoje", "calcula o prazo dessa sentença".
 
 > O `uv` e pre-requisito: o `juris-mcp-br` sobe o MCP com `uv run` e o `juris-prazos` usa `uv run` pra puxar os feriados (lib `holidays`) sozinho, sem mexer no Python do sistema.
 
