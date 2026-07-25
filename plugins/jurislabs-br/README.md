@@ -1,4 +1,4 @@
-# MCP JurisLabs (juris-mcp-br)
+# MCP JurisLabs (jurislabs-br)
 
 Traz tres fontes juridicas oficiais e gratuitas do Brasil para dentro do Claude, como um conector MCP. E o primeiro MCP juridico focado em BR (o ecossistema so tinha EUA/ES/LatAm).
 
@@ -18,7 +18,7 @@ Depois de instalado, e so pedir em linguagem natural: "vê as intimações da OA
 2. No Claude Code:
    ```
    /plugin marketplace add VitorTempone1/jurislabs-plugins
-   /plugin install juris-mcp-br@jurislabs
+   /plugin install jurislabs-br@jurislabs
    ```
 
 ## Limite conhecido (importante)

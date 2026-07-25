@@ -10,13 +10,13 @@
   },
   "plugins": [
     {
-      "name": "juris-prazos",
-      "source": "./plugins/juris-prazos",
+      "name": "jurislabs-prazos",
+      "source": "./plugins/jurislabs-prazos",
       "description": "Calculadora de prazos processuais pelo CPC (dias uteis, recesso, feriados forenses). Apoio, nao substitui a conferencia no PJe."
     },
     {
-      "name": "juris-mcp-br",
-      "source": "./plugins/juris-mcp-br",
+      "name": "jurislabs-br",
+      "source": "./plugins/jurislabs-br",
       "description": "MCP com fontes juridicas oficiais BR: DJEN (publicacoes por OAB), DataJud (andamento) e LexML (legislacao). Primeiro MCP juridico focado no Brasil."
     }
   ]

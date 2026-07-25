@@ -17,7 +17,7 @@ from juris_sources import (
     consultar_processo as _consultar_processo,
 )
 
-mcp = FastMCP("juris-mcp-br")
+mcp = FastMCP("jurislabs-br")
 
 
 def _seguro(fn, **kw) -> dict:
