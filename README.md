@@ -2,19 +2,25 @@
 
 Marketplace de plugins do Claude Code com skills que tiram a repeticao do dia do advogado. Curadoria da JurisLabs. Este e o destino do QR code da palestra "Claude para advogados".
 
-## Como instalar (Claude Code)
-Cole cada linha no Claude Code, uma de cada vez.
+## Como instalar
+
+**1) No Terminal do seu Mac**, cole esta linha e dê Enter. Ela confere e instala o que falta (`git`, `uv`), sem senha e sem mexer no Python do sistema:
 ```
-!curl -LsSf https://astral.sh/uv/install.sh | sh
+curl -LsSf https://raw.githubusercontent.com/VitorTempone1/jurislabs-plugins/main/install.sh | bash
+```
+
+**2) Quando aparecer `✅ Tudo pronto`**, abra o Claude Code e cole cada linha, uma de cada vez:
+```
 /plugin marketplace add VitorTempone1/jurislabs-plugins
 /plugin install jurislabs-br@jurislabs
 /plugin install jurislabs-prazos@jurislabs
 ```
+
 Depois e so pedir em portugues, ex.: "vê minhas intimações de hoje", "calcula o prazo dessa sentença".
 
 > O `uv` e pre-requisito: o `jurislabs-br` sobe o MCP com `uv run` e o `jurislabs-prazos` usa `uv run` pra puxar os feriados (lib `holidays`) sozinho, sem mexer no Python do sistema.
 
-Se so essas 4 linhas nao funcionaram (deu erro de `git`, `uv` nao encontrado, etc.), siga o passo a passo abaixo.
+Travou em algum ponto? O passo a passo detalhado (com o caminho manual, sem script) esta logo abaixo.
 
 ## Instalação passo a passo
 
@@ -24,16 +30,15 @@ Isso resolve o que costuma travar num Mac "limpo": falta o `git`, falta o `uv`, 
 
 ### Caminho fácil: rodar o script
 
-1. Baixe este repositório (botão verde **Code → Download ZIP** no GitHub, ou `git clone` se já tiver git) e descompacte.
-2. No Terminal, entre na pasta descompactada e rode:
+1. Cole esta linha no Terminal e dê Enter (não precisa baixar nada antes):
    ```
-   bash install.sh
+   curl -LsSf https://raw.githubusercontent.com/VitorTempone1/jurislabs-plugins/main/install.sh | bash
    ```
-3. O script confere, um por um: Claude Code instalado, `git` instalado, `uv` instalado. Pra cada um que faltar, ele instala sozinho (sem `sudo`, sem pedir sua senha) ou te diz exatamente o que fazer — por exemplo, clicar em "Instalar" numa janela que abre sozinha, ou fechar e abrir o Terminal de novo.
+2. O script confere, um por um: Claude Code instalado, `git` instalado, `uv` instalado. Pra cada um que faltar, ele instala sozinho (sem `sudo`, sem pedir sua senha) ou te diz exatamente o que fazer — por exemplo, clicar em "Instalar" numa janela que abre sozinha, ou fechar e abrir o Terminal de novo.
 4. Quando aparecer `✅ Tudo pronto.`, o script mostra os 3 comandos `/plugin`. Copie, abra o Claude Code e cole um de cada vez.
 5. **Como saber que deu certo:** depois de `/plugin install jurislabs-br@jurislabs`, peça pro Claude "vê minhas intimações da OAB 123456/SP". Se ele chamar a ferramenta `consultar_djen` (em vez de dizer que não tem essa capacidade), o MCP está no ar.
 
-Se o script parar com `❌`, ele diz exatamente o comando pra rodar. Rode, feche e abra o Terminal de novo, e rode `bash install.sh` outra vez — pode rodar quantas vezes quiser, ele só faz o que ainda falta.
+Se o script parar com `❌`, ele diz exatamente o comando pra rodar. Rode, feche e abra o Terminal de novo, e cole de novo o mesmo comando — pode rodar quantas vezes quiser, ele só faz o que ainda falta.
 
 ### Caminho manual (sem rodar script)
 

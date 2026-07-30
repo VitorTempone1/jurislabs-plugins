@@ -16,7 +16,7 @@ erro_final() {
   echo
   falta "$1"
   echo
-  echo "Corrija o passo acima e rode de novo: bash install.sh"
+  echo "Corrija o passo acima e cole de novo o mesmo comando de instalação"
   exit 1
 }
 
@@ -27,7 +27,7 @@ echo
 if command -v claude >/dev/null 2>&1; then
   ok "Claude Code encontrado ($(command -v claude))."
 else
-  erro_final "Não achei o Claude Code instalado. Instale primeiro em https://claude.com/download e depois rode este script de novo."
+  erro_final "Não achei o Claude Code instalado. Instale primeiro em https://claude.com/download e depois cole de novo o mesmo comando de instalação."
 fi
 
 # 2) git — o Claude Code usa git por baixo dos panos para baixar o marketplace
@@ -38,7 +38,7 @@ else
   if [[ "$(uname -s)" == "Darwin" ]]; then
     falta "git não encontrado. No Mac ele vem com as \"Ferramentas de Linha de Comando\"."
     info "Vou abrir a instalação agora. Uma janela vai aparecer — clique em \"Instalar\" e espere terminar"
-    info "(alguns minutos). Depois rode este script de novo: bash install.sh"
+    info "(alguns minutos). Depois cole de novo o mesmo comando de instalação"
     xcode-select --install 2>/dev/null || true
     exit 1
   else
@@ -67,7 +67,7 @@ else
   done
 
   if [[ -z "$UV_BIN" ]]; then
-    erro_final "O instalador do uv rodou mas não achei o programa depois. Feche e abra o Terminal de novo e rode: bash install.sh"
+    erro_final "O instalador do uv rodou mas não achei o programa depois. Feche e abra o Terminal de novo e cole de novo o mesmo comando de instalação"
   fi
   ok "uv instalado ($UV_BIN)."
 fi
@@ -78,7 +78,7 @@ fi
 if ! command -v uv >/dev/null 2>&1; then
   echo
   falta "uv foi instalado, mas este terminal ainda não está enxergando ele no PATH."
-  info "Fresh install: feche este Terminal, abra um novo e rode: bash install.sh"
+  info "Fresh install: feche este Terminal, abra um novo e cole de novo o mesmo comando de instalação"
   info "(Se o Claude Code já estava aberto, feche e abra ele de novo também.)"
   exit 1
 fi
