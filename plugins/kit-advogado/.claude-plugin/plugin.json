@@ -1,0 +1,56 @@
+{
+  "name": "kit-advogado",
+  "displayName": "Kit do Advogado",
+  "description": "O kit base do JurisLabs OS: organiza a pasta de cada cliente, mantem o briefing do caso vivo com data, e coloca tres advogados de IA pra trabalhar no seu caso (pesquisa, ataque da parte contraria e estrategia). Tudo fica no seu computador.",
+  "author": {
+    "name": "JurisLabs",
+    "url": "https://jurislabs.com.br"
+  },
+  "homepage": "https://jurislabs.com.br",
+  "repository": "https://github.com/VitorTempone1/jurislabs-plugins",
+  "license": "Apache-2.0",
+  "keywords": [
+    "juridico",
+    "advocacia",
+    "escritorio",
+    "briefing",
+    "estrategia",
+    "brasil"
+  ],
+  "dependencies": [
+    "jurislabs-prazos",
+    "jurislabs-br"
+  ],
+  "userConfig": {
+    "escritorio_nome": {
+      "type": "string",
+      "title": "Nome do escritório",
+      "description": "Como o seu escritório aparece nos documentos e nas minutas. Exemplo: Silva & Costa Advogados Associados. Se você advoga sozinho, pode ser o seu próprio nome.",
+      "required": true
+    },
+    "advogado_nome": {
+      "type": "string",
+      "title": "Seu nome",
+      "description": "Seu nome completo, do jeito que você assina as peças. Exemplo: Maria Silva Costa.",
+      "required": true
+    },
+    "oab_numero": {
+      "type": "string",
+      "title": "Número da OAB",
+      "description": "Só os números da sua inscrição, sem a sigla do estado e sem pontos. Exemplo: 123456.",
+      "required": true
+    },
+    "oab_uf": {
+      "type": "string",
+      "title": "UF da OAB",
+      "description": "A sigla de duas letras do estado onde você tem a inscrição. Exemplo: MG (Minas Gerais), SP (São Paulo), RJ (Rio de Janeiro).",
+      "required": true
+    },
+    "pasta_escritorio": {
+      "type": "directory",
+      "title": "Pasta do escritório",
+      "description": "Escolha (ou crie antes) uma pasta no seu computador pra guardar os casos. Cada cliente vira uma subpasta ali dentro. Exemplo: Documentos/Escritorio. Não aponte pra uma pasta que esteja dentro de um repositório do GitHub nem numa pasta compartilhada com terceiros: dado de cliente é sigiloso e fica só na sua máquina.",
+      "required": true
+    }
+  }
+}

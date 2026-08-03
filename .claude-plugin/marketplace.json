@@ -18,6 +18,11 @@
       "name": "jurislabs-br",
       "source": "./plugins/jurislabs-br",
       "description": "MCP com fontes juridicas oficiais BR: DJEN (publicacoes por OAB), DataJud (andamento) e LexML (legislacao). Primeiro MCP juridico focado no Brasil."
+    },
+    {
+      "name": "kit-advogado",
+      "source": "./plugins/kit-advogado",
+      "description": "O kit base do JurisLabs OS: organiza a pasta de cada cliente, mantem o briefing do caso vivo com data, e coloca tres advogados de IA pra trabalhar no seu caso (pesquisa, ataque da parte contraria e estrategia). Tudo fica no seu computador."
     }
   ]
 }

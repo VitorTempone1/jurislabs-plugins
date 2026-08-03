@@ -89,4 +89,10 @@ echo
 echo "  /plugin marketplace add VitorTempone1/jurislabs-plugins"
 echo "  /plugin install jurislabs-br@jurislabs"
 echo "  /plugin install jurislabs-prazos@jurislabs"
+echo "  /plugin install kit-advogado@jurislabs"
+echo
+info "A última linha (kit-advogado) é o kit do escritório: pasta de cada cliente,"
+info "briefing do caso e os três advogados de IA. Ela precisa das duas de cima,"
+info "então cole na ordem. Ao instalar, o Claude vai perguntar o nome do seu"
+info "escritório, sua OAB e qual pasta usar — responda e pronto."
 echo
