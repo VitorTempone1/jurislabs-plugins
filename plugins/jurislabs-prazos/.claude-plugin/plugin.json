@@ -1,7 +1,7 @@
 {
   "name": "jurislabs-prazos",
   "description": "Calculadora de prazos processuais MULTIRREGIME: CPC (dias uteis, art. 219), CLT (art. 775), CPP processual (dias CORRIDOS, art. 798), CP material (art. 10, inclui o dia do comeco), JEC (Lei 9.099 art. 12-A) e administrativo (INSS e fiscal federal). Termo inicial pela cadeia do art. 224 §§2-3, recesso forense e feriados nacionais/estaduais/forenses. Sem regime informado ele nao calcula: pergunta. E apoio, nunca substitui a conferencia oficial no PJe/autos.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": {
     "name": "JurisLabs",
     "url": "https://juristools.jurislabs.com.br"

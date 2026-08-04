@@ -1,6 +1,6 @@
 ---
 name: prazo-cpc
-description: Calcula prazo processual em qualquer regime (CPC, CLT, CPP penal processual, CP penal material, JEC, administrativo federal, INSS/CRPS e fiscal federal), a partir da disponibilizacao no DJE/DJEN ou da ciencia. Use quando o advogado pedir "calcular prazo", "quando vence", "que dia cai o prazo", "prazo de X dias da publicacao/intimacao", "prescricao", "decadencia", ou passar uma data e um numero de dias. Aplica dias uteis x dias corridos por regime, o termo inicial (CPC art. 224 §§2-3), o recesso (20/12-06/01 sem expediente x 20/12-20/01 com prazo suspenso) e os feriados forenses da Lei 5.010/66 art. 62. SEM regime e sem saber se a data e disponibilizacao ou publicacao, a skill NAO calcula: ela pergunta.
+description: 'Calcula prazo processual em qualquer regime (CPC, CLT, CPP penal processual, CP penal material, JEC, administrativo federal, INSS/CRPS e fiscal federal), a partir da disponibilizacao no DJE/DJEN ou da ciencia. Use quando o advogado pedir "calcular prazo", "quando vence", "que dia cai o prazo", "prazo de X dias da publicacao/intimacao", "prescricao", "decadencia", ou passar uma data e um numero de dias. Aplica dias uteis x dias corridos por regime, o termo inicial (CPC art. 224 §§2-3), o recesso (20/12-06/01 sem expediente x 20/12-20/01 com prazo suspenso) e os feriados forenses da Lei 5.010/66 art. 62. SEM regime e sem saber se a data e disponibilizacao ou publicacao, a skill NAO calcula: ela pergunta.'
 ---
 
 # Calculadora de prazos (multirregime)
