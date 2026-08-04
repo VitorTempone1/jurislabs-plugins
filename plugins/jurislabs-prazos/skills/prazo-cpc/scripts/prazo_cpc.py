@@ -15,7 +15,8 @@ estadual, categoria `public`). Sem ela, o calculo degrada AVISANDO.
 Tres calendarios separados, nao um (o erro-raiz da versao anterior):
 
   1. HA EXPEDIENTE FORENSE?  decide a publicacao (CPC 224 §2) e o termo inicial
-     (§3). Fecha em 20/12-06/01 (Res. CNJ 244/2016 art. 1º; Lei 5.010/66 art. 62, I).
+     (§3). Fecha em 20/12-06/01 (Res. CNJ 244/2016 art. 1º, que vale em todo o
+     Poder Judiciario; na Justica Federal ha tambem a Lei 5.010/66 art. 62, I).
   2. O PRAZO CORRE?          decide a contagem. Suspenso em 20/12-20/01 (CPC 220,
      CLT 775-A, CPP 798-A, Dec. 70.235 art. 5º-A). De 07 a 20/01 o tribunal
      ESTA ABERTO e publicando (Res. CNJ 244/2016 art. 3º, par. unico) e mesmo
@@ -27,8 +28,12 @@ Camadas de feriado (§II.6 da ESPEC-PRAZOS):
   1-2. civil nacional/estadual  -> lib `holidays`, categoria `public` APENAS.
        `optional` (ponto facultativo civil: Quarta de Cinzas, Corpus Christi,
        Dia do Servidor, vesperas) NAO e suspensao forense e ficou de fora.
-  3.   forense nacional         -> Lei 5.010/66 art. 62, tabela nossa aqui.
+  3.   forense FEDERAL          -> Lei 5.010/66 art. 62, tabela nossa aqui. NAO e
+       nacional: a lei "organiza a Justica Federal de primeira instancia" e o
+       art. 62 diz "serao feriados na Justica Federal, inclusive nos Tribunais
+       Superiores". Nao alcanca justica ESTADUAL. Ver `eh_justica_federal`.
   4-5. forense do tribunal      -> feriados/<TRIBUNAL>.json (portaria) + exclusoes.
+       Em TJ estadual e AQUI que Carnaval e Semana Santa moram.
   6.   comarca                  -> nao automatizavel; vira ressalva.
 
 REGRA INEGOCIAVEL: o calculo e APOIO. Nunca substitui a conferencia oficial no
@@ -74,6 +79,31 @@ _TRIBUNAL_UF = {
 }
 
 DIR_FERIADOS_PADRAO = Path(__file__).resolve().parent.parent / "feriados"
+
+# --- Escopo da Lei 5.010/66 art. 62 ------------------------------------------
+# Ementa: "Organiza a Justica Federal de primeira instancia". Art. 62: "serao
+# feriados na Justica Federal, inclusive nos Tribunais Superiores". Fora dai a
+# lei nao alcanca, e inventar feriado num TJ empurra o vencimento pra FRENTE,
+# que e a direcao que faz perder prazo.
+_SIGLAS_FEDERAIS = {"STF", "STJ", "TST", "TSE", "STM", "TNU"}
+_PREFIXOS_FEDERAIS = ("TRF", "JF", "JEF")
+# NAO entram: TRT e Varas do Trabalho, TRE e zonas eleitorais, TJM estadual. Sao
+# ramos federais do Judiciario, mas nao sao "Justica Federal" nem Tribunal
+# Superior no texto do art. 62, e nao achei fonte primaria estendendo o artigo
+# a eles. Ficam de fora pela direcao segura: sem o feriado, o vencimento sai
+# mais CEDO. Quem tiver a portaria em maos usa --justica federal ou a camada 4.
+
+
+def eh_justica_federal(tribunal: str = "") -> bool:
+    """A sigla do orgao e Justica Federal ou Tribunal Superior?
+
+    Vazio/desconhecido devolve False DE PROPOSITO. As duas direcoes do erro nao
+    valem o mesmo: aplicar o art. 62 onde ele nao vale adia o vencimento (perde
+    prazo); deixar de aplicar onde vale antecipa (protocolar antes, e o aviso
+    de calendario faltando cobre). Na duvida, a resposta segura e "nao".
+    """
+    t = (tribunal or "").upper().strip()
+    return t in _SIGLAS_FEDERAIS or t.startswith(_PREFIXOS_FEDERAIS)
 
 
 # --------------------------------------------------------------------------
@@ -198,7 +228,7 @@ REGIMES: dict[str, Regime] = {
 
 
 # --------------------------------------------------------------------------
-# Camada 3: feriado forense nacional (Lei 5.010/66 art. 62)
+# Camada 3: feriado forense FEDERAL (Lei 5.010/66 art. 62)
 # --------------------------------------------------------------------------
 def pascoa(ano: int) -> date:
     """Domingo de Pascoa (algoritmo gregoriano anonimo)."""
@@ -215,12 +245,20 @@ def pascoa(ano: int) -> date:
     return date(ano, mes, dia + 1)
 
 
-def feriados_forenses_nacionais(ano: int) -> dict[date, str]:
-    """Lei 5.010/66 art. 62, incisos II, III e IV.
+def feriados_forenses_federais(ano: int) -> dict[date, str]:
+    """Lei 5.010/66 art. 62, incisos II, III e IV - SO na Justica Federal.
+
+    O art. 62 diz "serao feriados na Justica Federal, inclusive nos Tribunais
+    Superiores". Chamar isso de "nacional" foi o erro-raiz: num TJ estadual
+    essas datas viram feriado que nao existe e o vencimento sai TARDE. Quem
+    filtra e `CalendarioForense.federal` (via `eh_justica_federal`).
 
     O inciso I (20/12 a 06/01) e janela, nao data solta: vive em
-    RECESSO_SEM_EXPEDIENTE. Note o que a lei NAO lista: Quarta-feira de Cinzas
-    e Corpus Christi. Esses dependem de portaria do tribunal (camada 4).
+    RECESSO_SEM_EXPEDIENTE, e continua valendo em TJ estadual por outro
+    fundamento (Res. CNJ 244/2016 art. 1º + portaria do tribunal).
+
+    Note o que a lei NAO lista: Quarta-feira de Cinzas e Corpus Christi. Esses
+    dependem de portaria do tribunal (camada 4) mesmo na Justica Federal.
     """
     p = pascoa(ano)
     fer: dict[date, str] = {}
@@ -253,9 +291,12 @@ class CalendarioForense:
 
     def __init__(self, tribunal: str = "", uf: str = "",
                  feriados_extra=None, exclusoes=None,
-                 fonte: str = "", vigencia: str = "", forense: bool = True):
+                 fonte: str = "", vigencia: str = "", forense: bool = True,
+                 federal: bool | None = None):
         self.forense = forense
         self.tribunal = (tribunal or "").upper()
+        # None = deduz da sigla; bool = o chamador cravou (--justica vence).
+        self.federal = eh_justica_federal(self.tribunal) if federal is None else bool(federal)
         self.uf = (uf or _TRIBUNAL_UF.get(self.tribunal, "")).upper()
         self.fonte = fonte
         self.vigencia = vigencia
@@ -281,7 +322,7 @@ class CalendarioForense:
 
     def _forense(self, ano: int) -> dict[date, str]:
         if ano not in self._forenses:
-            self._forenses[ano] = feriados_forenses_nacionais(ano)
+            self._forenses[ano] = feriados_forenses_federais(ano)
         return self._forenses[ano]
 
     def motivo_sem_expediente(self, d: date) -> str | None:
@@ -291,11 +332,15 @@ class CalendarioForense:
         if d.weekday() >= 5:
             return "sabado/domingo"
         if self.forense and _na_janela(d, RECESSO_SEM_EXPEDIENTE):
-            return ("recesso forense - tribunal fechado (Res. CNJ 244/2016 "
-                    "arts. 1º e 2º; Lei 5.010/66 art. 62, I)")
+            # Vale tambem em TJ estadual, mas por outro fundamento: a Res. CNJ
+            # alcanca todo o Judiciario, a Lei 5.010/66 so a Justica Federal.
+            base = ("Res. CNJ 244/2016 arts. 1º e 2º; Lei 5.010/66 art. 62, I"
+                    if self.federal
+                    else "Res. CNJ 244/2016 arts. 1º e 2º c/c portaria do tribunal")
+            return f"recesso forense - tribunal fechado ({base})"
         if d in self.extra:
             return self.extra[d]
-        f = self._forense(d.year).get(d) if self.forense else None
+        f = self._forense(d.year).get(d) if (self.forense and self.federal) else None
         if f:
             return f
         nome = self._civis.get(d) if self._civis is not None else None
@@ -323,6 +368,10 @@ def carregar_calendario(caminho, tribunal: str = "") -> dict:
         if not tribunal:
             return {}
         p = p / f"{tribunal.upper()}.json"
+    if not p.is_file() and tribunal:
+        # pacote pago nao tem esse tribunal (ou nem existe assinatura): cai de
+        # volta na pasta embutida no plugin, que hoje traz o TJMG.
+        p = DIR_FERIADOS_PADRAO / f"{tribunal.upper()}.json"
     if not p.is_file():
         return {}
     dados = json.loads(p.read_text(encoding="utf-8"))
@@ -342,6 +391,34 @@ def carregar_calendario(caminho, tribunal: str = "") -> dict:
         "vigencia": str(dados.get("vigencia", "")),
         "arquivo": str(p),
     }
+
+
+def aviso_assinatura(caminho, hoje: date) -> str:
+    """D-30 e D-7 da ASSINATURA do calendario pago (nao da vigencia do calendario).
+
+    Le o `_assinatura.json` que o hook grava ao lado dos JSONs. Sem assinatura,
+    devolve string vazia e ninguem fica sabendo que existe produto pago.
+    """
+    p = Path(caminho)
+    p = (p if p.is_dir() else p.parent) / "_assinatura.json"
+    if not p.is_file():
+        return ""
+    try:
+        expira = date.fromisoformat(
+            json.loads(p.read_text(encoding="utf-8"))["expira"])
+    except Exception:
+        return ""
+    faltam = (expira - hoje).days
+    if faltam < 0:
+        return (f"Assinatura do calendario forense VENCIDA em {_br(expira)}: os "
+                "calendarios pararam de ser atualizados. O que ja foi baixado "
+                "continua no lugar e vale ate a vigencia dele; portaria nova nao "
+                "chega mais.")
+    if faltam <= 30:
+        return (f"Assinatura do calendario forense vence em {_br(expira)} "
+                f"({faltam} dia(s)). Sem renovar, o calendario do ano que vem nao "
+                "chega e o motor passa a calcular sem os feriados do tribunal.")
+    return ""
 
 
 # --------------------------------------------------------------------------
@@ -367,7 +444,7 @@ def calcular(data: date, dias: int, regime: str, *, natureza: str = "",
              hoje: date | None = None, feriados_extra=None, exclusoes=None,
              dir_feriados=None, sem_suspensao: str = "",
              litisconsortes: bool = False, autos: str = "",
-             folga: int = FOLGA_PROTOCOLO) -> dict:
+             folga: int = FOLGA_PROTOCOLO, justica: str = "") -> dict:
     """Calcula o vencimento. `regime` e OBRIGATORIO e nao tem valor padrao.
 
     A trava do §II.4 e tecnica, nao aviso em texto: sem regime, levanta erro.
@@ -382,6 +459,9 @@ def calcular(data: date, dias: int, regime: str, *, natureza: str = "",
     reg = REGIMES[regime]
     if dias < 1:
         raise ValueError("dias tem que ser >= 1")
+    if justica not in ("", "federal", "estadual"):
+        raise ValueError("justica so aceita 'federal' ou 'estadual' (vazio = "
+                         "deduz da sigla do tribunal)")
 
     if unidade and unidade != reg.unidade:
         if reg.unidade_travada:
@@ -426,7 +506,8 @@ def calcular(data: date, dias: int, regime: str, *, natureza: str = "",
     cal = CalendarioForense(tribunal=tribunal, uf=uf, feriados_extra=fer,
                             exclusoes=exc, fonte=cal_trib.get("fonte", ""),
                             vigencia=cal_trib.get("vigencia", ""),
-                            forense=reg.calendario_forense)
+                            forense=reg.calendario_forense,
+                            federal=None if not justica else justica == "federal")
 
     suspende = reg.suspensao is not None and not sem_suspensao
 
@@ -485,17 +566,36 @@ def calcular(data: date, dias: int, regime: str, *, natureza: str = "",
     elif not cal.uf_carregada:
         avisos.append("Sem tribunal/UF valido: feriado ESTADUAL nao entrou. "
                       "Informe --tribunal ou --uf. Calculo conservador; conferir.")
+    if reg.calendario_forense and not cal.federal:
+        avisos.append(
+            f"{cal.tribunal or 'Orgao'} tratado como justica ESTADUAL: os feriados "
+            "da Lei 5.010/66 art. 62 (Semana Santa, Carnaval, 11/08, 1º e 2/11, "
+            "8/12) NAO foram aplicados - a lei organiza a Justica Federal e o "
+            "art. 62 so alcanca ela e os Tribunais Superiores. Num TJ essas datas "
+            "vem da PORTARIA do tribunal (camada 4). Se o orgao for federal, passe "
+            "--justica federal.")
     if not cal_trib:
+        faltantes = ("Quarta de Cinzas, Corpus Christi, emendas, Dia do Servidor "
+                     "transferido e feriado local")
+        if reg.calendario_forense and not cal.federal:
+            faltantes = ("Carnaval, Semana Santa, Dia da Justica e demais feriados "
+                         "forenses do tribunal, alem de Quarta de Cinzas, Corpus "
+                         "Christi, emendas, Dia do Servidor transferido e feriado "
+                         "local")
         avisos.append(
             f"Sem calendario do {cal.tribunal or 'tribunal'} "
-            f"(feriados/{(cal.tribunal or 'TJXX')}.json nao encontrado): Quarta de "
-            "Cinzas, Corpus Christi, emendas, Dia do Servidor transferido e "
-            "feriado local NAO entraram. O vencimento pode sair mais CEDO que o "
-            "real. Conferir no PJe.")
+            f"(feriados/{(cal.tribunal or 'TJXX')}.json nao encontrado): {faltantes} "
+            "NAO entraram. O vencimento pode sair mais CEDO que o real. "
+            "Conferir no PJe.")
     elif cal.vigencia and cal.vigencia != str(venc.year):
         avisos.append(f"Calendario do {cal.tribunal} tem vigencia {cal.vigencia} e o "
                       f"prazo vence em {venc.year}. Calendario vencido nao vale; "
                       "atualizar pela portaria do ano.")
+    assin = aviso_assinatura(
+        dir_feriados if dir_feriados is not None else DIR_FERIADOS_PADRAO,
+        hoje or date.today())
+    if assin:
+        avisos.append(assin)
     if sem_suspensao:
         avisos.append(f"Suspensao do recesso DESLIGADA a pedido: {sem_suspensao}. "
                       f"Base da excecao: {reg.excecoes_suspensao or reg.base_suspensao}")
@@ -528,6 +628,8 @@ def calcular(data: date, dias: int, regime: str, *, natureza: str = "",
         "excluidos": [{"data": d.isoformat(), "motivo": m} for d, m in excluidos],
         "tribunal": cal.tribunal or None,
         "uf": cal.uf or None,
+        "justica": ("federal" if cal.federal else "estadual") if reg.calendario_forense else None,
+        "art62Aplicado": bool(reg.calendario_forense and cal.federal),
         "fonteCalendario": cal.fonte or None,
         "vigenciaCalendario": cal.vigencia or None,
         "avisos": avisos,
@@ -567,6 +669,9 @@ def _fmt(r: dict) -> str:
     cal = " ".join(x for x in (r["tribunal"], f"({r['uf']})" if r["uf"] else "") if x)
     L.append(f"Tribunal     : {cal or 'NAO INFORMADO'}"
              + (f" - calendario: {r['fonteCalendario']}" if r["fonteCalendario"] else ""))
+    if r.get("justica"):
+        L.append(f"Justica      : {r['justica']} - Lei 5.010/66 art. 62 "
+                 + ("APLICADO" if r["art62Aplicado"] else "NAO aplicado"))
     L.append("")
     rotulo = {"disponibilizacao": "Disponibilizado em",
               "publicacao": "Publicado em"}.get(r["natureza"], "Ciencia / intimacao em")
@@ -632,8 +737,14 @@ def main(argv=None) -> int:
     p.add_argument("--dias", type=int, required=True, help="tamanho do prazo")
     p.add_argument("--unidade", choices=("uteis", "corridos"), default="",
                    help="sobrepoe a unidade do regime (ex.: PAF art. 15/33 = uteis)")
-    p.add_argument("--tribunal", default="", help="sigla, ex.: TJMG, TJSP")
+    p.add_argument("--tribunal", default="", help="sigla, ex.: TJMG, TJSP, TRF6, STJ")
     p.add_argument("--uf", default="", help="UF, se nao passar tribunal")
+    p.add_argument("--justica", choices=("federal", "estadual"), default="",
+                   help="crava o ramo e VENCE a deducao pela sigla. So na Justica "
+                        "Federal e nos Tribunais Superiores valem os feriados da "
+                        "Lei 5.010/66 art. 62 (Semana Santa, Carnaval, 11/08, "
+                        "1º e 2/11, 8/12). Sem sigla conhecida, o motor assume "
+                        "ESTADUAL - a direcao segura.")
     p.add_argument("--feriados", default="",
                    help="arquivo ou pasta com <TRIBUNAL>.json (default: ../feriados)")
     p.add_argument("--feriado-extra", action="append", default=[], metavar="AAAA-MM-DD",
@@ -683,7 +794,7 @@ def main(argv=None) -> int:
             dir_feriados=args.feriados or None,
             sem_suspensao=args.sem_suspensao,
             litisconsortes=args.litisconsortes, autos=args.autos,
-            folga=args.folga,
+            folga=args.folga, justica=args.justica,
         )
     except ValueError as e:
         print(f"ERRO: {e}", file=sys.stderr)

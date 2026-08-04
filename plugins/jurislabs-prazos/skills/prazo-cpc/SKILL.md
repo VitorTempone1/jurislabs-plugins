@@ -74,8 +74,14 @@ entram os feriados **civis** nacionais e estaduais (recomendado:
 
 ```bash
 python3 scripts/prazo_cpc.py --regime cpc --natureza disponibilizacao \
-  --data 2026-07-03 --dias 15 --tribunal TJMG --hoje 2026-07-15
+  --data 2026-07-03 --dias 15 --tribunal TJMG --hoje 2026-07-15 \
+  --feriados "${CLAUDE_PLUGIN_DATA}/feriados"
 ```
+
+**Passe SEMPRE o `--feriados` assim.** E a pasta onde o hook `SessionStart`
+guarda os calendarios do pacote pago, e ela sobrevive a atualizacao do plugin.
+Se o tribunal pedido nao estiver la (ou nao houver assinatura nenhuma), o motor
+cai sozinho na pasta embutida — nada quebra, e quem nao assina nem percebe.
 
 | Parametro | Para que |
 |---|---|
@@ -84,8 +90,9 @@ python3 scripts/prazo_cpc.py --regime cpc --natureza disponibilizacao \
 | `--natureza` | `disponibilizacao` \| `publicacao` \| `ciencia`. Obrigatorio em CPC/CLT/JEC |
 | `--dias N` | obrigatorio: tamanho do prazo |
 | `--unidade` | `uteis` \| `corridos` — sobrepoe a unidade do regime. Necessario no PAF (arts. 15 e 33 = 20 dias **uteis** num regime que e corrido por regra). Recusado no CPP e no CP |
-| `--tribunal TJXX` / `--uf XX` | carrega feriado estadual e o calendario do tribunal |
-| `--feriados CAMINHO` | arquivo ou pasta com `<TRIBUNAL>.json` (default: `feriados/`) |
+| `--tribunal TJXX` / `--uf XX` | carrega feriado estadual e o calendario do tribunal; a sigla tambem deduz o ramo (federal x estadual) |
+| `--justica` | `federal` \| `estadual` — crava o ramo e **vence a sigla**. So no federal valem os feriados da Lei 5.010/66 art. 62 |
+| `--feriados CAMINHO` | arquivo ou pasta com `<TRIBUNAL>.json`. Use `"${CLAUDE_PLUGIN_DATA}/feriados"`; sem achar o tribunal la, cai na pasta embutida |
 | `--feriado-extra AAAA-MM-DD` | feriado a mais (repetivel): portaria, feriado local |
 | `--excluir AAAA-MM-DD` | data que a lib marca mas que **tem expediente** (repetivel) |
 | `--sem-suspensao MOTIVO` | desliga o recesso. CPP art. 798-A: reu preso vinculado a prisao, Maria da Penha, medida urgente |
@@ -145,10 +152,28 @@ Camadas de feriado:
 | Camada | Conteudo | Onde |
 |---|---|---|
 | 1-2 | civil nacional e estadual | lib `holidays`, categoria `public` **apenas** |
-| 3 | forense nacional: Semana Santa (quarta ao domingo), Carnaval **segunda e terca**, 11/08, 1º e 2/11, 8/12 | Lei 5.010/66 art. 62, embutido no motor |
+| 3 | forense **FEDERAL** (so Justica Federal e Tribunais Superiores): Semana Santa (quarta ao domingo), Carnaval **segunda e terca**, 11/08, 1º e 2/11, 8/12 | Lei 5.010/66 art. 62, embutido no motor |
 | 4 | portaria do tribunal: Quarta de Cinzas, Corpus Christi, emendas, Dia do Servidor transferido, aniversario da comarca | `feriados/<TRIBUNAL>.json` |
 | 5 | exclusoes: data que a lib marca mas que **tem expediente** | mesmo JSON, chave `exclusoes` |
 | 6 | feriado municipal da comarca | **nao automatizavel** — vira ressalva |
+
+**A camada 3 nao e nacional, e FEDERAL.** A Lei 5.010/66 "organiza a Justica
+Federal de primeira instancia" (ementa) e o art. 62 diz *"serao feriados na
+Justica Federal, **inclusive nos Tribunais Superiores**"*. Nao alcanca justica
+estadual. Num TJ o motor inventaria feriado que nao existe e o vencimento sairia
+**mais TARDE que o real** — a unica direcao que faz perder prazo.
+
+O motor deduz o ramo pela sigla (`TRF*`, `JF*`, `JEF*`, `STJ`, `STF`, `TST`,
+`TSE`, `STM`, `TNU` = federal; o resto = estadual) e `--justica federal|estadual`
+**vence a deducao**. Sem sigla conhecida ele assume **estadual**, que e a direcao
+segura de errar. Em TJ, Carnaval e Semana Santa passam a vir da **camada 4**
+(portaria do tribunal) — sem o JSON o vencimento sai mais CEDO, e o motor avisa.
+A saida traz a linha `Justica:` dizendo se o art. 62 foi aplicado, e o JSON traz
+`justica` e `art62Aplicado`.
+
+O **recesso 20/12–06/01 continua fechando o TJ estadual**: ali o fundamento e a
+Res. CNJ 244/2016 art. 1º (vale em todo o Judiciario) mais a portaria do
+tribunal, nao o art. 62, I.
 
 **Ponto facultativo civil nao e feriado forense.** Quarta de Cinzas, Corpus
 Christi, Dia do Servidor e vesperas **sairam** do calendario automatico: a
@@ -161,6 +186,26 @@ Hoje o repositorio tem `feriados/TJMG.json` (Portaria Conjunta 1764/PR/2026).
 Para outro tribunal: copie o formato, cite a portaria em `_fonte`, preencha
 `vigencia` com o ano. Calendario de ano vencido faz o motor **avisar** em vez de
 usar calado. Correcao pontual sem criar JSON: `--feriado-extra` e `--excluir`.
+
+### Calendario forense assinado (opcional)
+
+Quem assina o calendario forense da JurisLabs cola a chave no campo **"Chave do
+calendario forense"** do plugin (aparece sozinho ao instalar). Dai em diante, uma
+vez por dia, o hook `SessionStart` baixa os calendarios dos tribunais assinados
+pra `${CLAUDE_PLUGIN_DATA}/feriados` e o motor os usa no lugar dos embutidos.
+
+O que voce precisa saber pra responder ao advogado:
+
+- **Sem chave nada muda.** O motor usa o que vem no plugin (TJMG) e avisa, como
+  sempre, quando falta o calendario do tribunal dele.
+- **Assinatura vencida nao apaga nada.** O que ja foi baixado continua no lugar e
+  vale ate a `vigencia` dele; o que para e a atualizacao. O motor imprime o
+  `AVISO` de assinatura a partir de **30 dias antes** do vencimento, e depois
+  dele. Repasse esse aviso: renovar depois que a portaria do ano novo saiu ja e
+  tarde.
+- **A chave nunca aparece em skill, agent nem comando.** `userConfig` com
+  `sensitive: true` so e entregue ao processo de hook. Nao tente le-la nem
+  pedi-la ao advogado no chat.
 
 ## Como responder ao advogado
 
@@ -181,10 +226,21 @@ usar calado. Correcao pontual sem criar JSON: `--feriado-extra` e `--excluir`.
 ## Autoteste
 
 ```bash
-python3 scripts/test_prazo_cpc.py
+python3 scripts/test_prazo_cpc.py               # a contagem
+python3 scripts/test_calendarios.py             # o DADO dos calendarios
+python3 ../../hooks/baixar_calendarios.py --autoteste   # o download do pacote pago
 ```
 
-A suite **exige** a lib `holidays` e morre sem ela — de proposito. Teste de
-prazo que passa sem calendario nao e teste de prazo: era exatamente o que a
-suite anterior fazia, e por isso os quatro defeitos de calendario passavam
+A suite de contagem **exige** a lib `holidays` e morre sem ela — de proposito.
+Teste de prazo que passa sem calendario nao e teste de prazo: era exatamente o
+que a suite anterior fazia, e por isso os quatro defeitos de calendario passavam
 verdes por ela.
+
+O `test_calendarios.py` confere o outro lado, o dado: reprova calendario
+**vencido** (vigencia menor que o ano corrente) e **malformado** (chave escrita
+errada, data invalida, data de outro ano, feriado sem fonte em
+`_referencia_<ano>`, feriado que tambem esta em `exclusoes`, pasta vazia). Ele
+existe porque chave errada nao explode: `carregar_calendario()` devolve lista
+vazia em silencio e o motor calcula feliz, sem nenhum feriado local. Roda em
+qualquer pasta — `python3 scripts/test_calendarios.py CAMINHO` — e tem
+`--autoteste` proprio.

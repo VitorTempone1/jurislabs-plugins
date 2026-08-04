@@ -18,10 +18,13 @@ Aqui nao ha data derivada do codigo sob teste: **toda data esperada foi contada
 a mao, com o artigo no comentario**. E a suite EXIGE a lib `holidays` - se ela
 sumir do ambiente, a suite morre em vez de passar mentindo.
 """
+import json
 from datetime import date, timedelta
+from pathlib import Path
 
-from prazo_cpc import (REGIMES, CalendarioForense, calcular,
-                       feriados_forenses_nacionais, pascoa)
+from prazo_cpc import (DIR_FERIADOS_PADRAO, REGIMES, CalendarioForense,
+                       aviso_assinatura, calcular, carregar_calendario,
+                       feriados_forenses_federais, pascoa)
 
 try:
     import holidays  # noqa: F401
@@ -34,6 +37,10 @@ except ImportError:
 
 TJSP = dict(tribunal="TJSP")
 DISP = dict(natureza="disponibilizacao")
+# Justica Federal: e SO aqui (e nos Tribunais Superiores) que a Lei 5.010/66
+# art. 62 vale. TRF3 cobre SP, entao o feriado ESTADUAL de 09/07 continua
+# entrando e as contas ficam comparaveis linha a linha com as do TJSP.
+TRF3 = dict(tribunal="TRF3", uf="SP")
 
 
 def _venc(data, dias, regime, **kw):
@@ -44,6 +51,14 @@ def _sem_expediente(cal, *iso):
     for s in iso:
         d = date.fromisoformat(s)
         assert not cal.tem_expediente(d), f"{s} deveria ser SEM expediente"
+
+
+def _cal_trib(tribunal, **kw):
+    """CalendarioForense COM a camada 4 carregada - e o que `calcular` monta.
+    `CalendarioForense(tribunal=...)` puro nao le o JSON do tribunal."""
+    c = carregar_calendario(DIR_FERIADOS_PADRAO, tribunal)
+    return CalendarioForense(tribunal=tribunal, feriados_extra=c.get("feriados", {}),
+                             exclusoes=c.get("exclusoes", set()), **kw)
 
 
 def _com_expediente(cal, *iso):
@@ -118,15 +133,22 @@ def test_defeito1_publica_em_07_01_mas_o_prazo_so_corre_em_21_01():
 
 def test_defeito1_tres_casos_da_auditoria():
     # Contados a mao com a Res. CNJ 244/2016 (Parte I.2 da ESPEC-PRAZOS).
-    # (a) disp sex 18/12/2026, 15d: pub 07/01/27, ini 21/01, venc 12/02/27.
-    #     21,22 | 25,26,27,28,29 | 01,02,03,04,05/02 | [08 e 09/02 Carnaval,
-    #     Lei 5.010/66 art. 62, III] | 10,11,12/02 -> 15º = sex 12/02/2027.
-    assert _venc(date(2026, 12, 18), 15, "cpc", **DISP, **TJSP) == "2027-02-12"
-    # (b) disp qui 07/01/2027, 15d: pub sex 08/01, ini 21/01, venc 12/02/27.
-    assert _venc(date(2027, 1, 7), 15, "cpc", **DISP, **TJSP) == "2027-02-12"
+    # (a) disp sex 18/12/2026, 15d: pub 07/01/27, ini 21/01.
+    #     21,22 | 25,26,27,28,29 | 01,02,03,04,05/02 | 08,09,10/02
+    #     -> 15º = qua 10/02/2027 no TJSP.
+    #     O Carnaval de 08 e 09/02/2027 e Lei 5.010/66 art. 62, III: NAO se
+    #     aplica a TJ estadual. Na Justica Federal ele volta e adia dois dias
+    #     uteis, para sex 12/02/2027 - e e essa a linha da auditoria original.
+    assert _venc(date(2026, 12, 18), 15, "cpc", **DISP, **TJSP) == "2027-02-10"
+    assert _venc(date(2026, 12, 18), 15, "cpc", **DISP, **TRF3) == "2027-02-12"
+    # (b) disp qui 07/01/2027, 15d: pub sex 08/01, ini 21/01 - mesma contagem.
+    assert _venc(date(2027, 1, 7), 15, "cpc", **DISP, **TJSP) == "2027-02-10"
+    assert _venc(date(2027, 1, 7), 15, "cpc", **DISP, **TRF3) == "2027-02-12"
     # (c) disp seg 11/01/2027, 5d: pub ter 12/01, ini 21/01.
-    #     21(1),22(2),25(3),26(4),27(5) -> qua 27/01/2027.
+    #     21(1),22(2),25(3),26(4),27(5) -> qua 27/01/2027. Sem Carnaval no
+    #     caminho, estadual e federal batem - e tem que bater mesmo.
     assert _venc(date(2027, 1, 11), 5, "cpc", **DISP, **TJSP) == "2027-01-27"
+    assert _venc(date(2027, 1, 11), 5, "cpc", **DISP, **TRF3) == "2027-01-27"
 
 
 # ==========================================================================
@@ -137,8 +159,12 @@ def test_defeito1_tres_casos_da_auditoria():
 # ==========================================================================
 def test_defeito2_quarta_de_cinzas_tem_expediente():
     cal = CalendarioForense(**TJSP)
-    _sem_expediente(cal, "2026-02-16", "2026-02-17")   # Carnaval seg e ter
-    _com_expediente(cal, "2026-02-18")                 # Quarta de Cinzas
+    fed = CalendarioForense(**TRF3)
+    _sem_expediente(fed, "2026-02-16", "2026-02-17")   # Carnaval seg e ter
+    _com_expediente(fed, "2026-02-18")                 # Quarta de Cinzas
+    # No TJSP o Carnaval do art. 62, III nao alcanca; vem da portaria (camada 4)
+    # e o TJSP nao tem JSON aqui - logo, dia util e o motor AVISANDO.
+    _com_expediente(cal, "2026-02-16", "2026-02-17", "2026-02-18")
     # Os outros facultativos civis que a categoria `optional` trazia e que
     # tambem sumiram do calendario (24 e 31/12 ficam de fora da lista: caem
     # dentro do recesso, entao a assercao provaria a coisa errada).
@@ -147,11 +173,16 @@ def test_defeito2_quarta_de_cinzas_tem_expediente():
 
 
 def test_defeito2_caso_medido_13_02_2026():
-    # disp sex 13/02/2026, 5 dias, TJSP. Carnaval 16-17/02, Cinzas 18/02.
-    # §2: pub = 1º dia com expediente = qua 18/02 (Cinzas E dia util).
-    # §3: ini qui 19/02. 19(1),20(2),23(3),24(4),25(5) -> qua 25/02/2026.
+    # disp sex 13/02/2026, 5 dias. Carnaval 16-17/02, Cinzas 18/02.
+    # Na Justica Federal (art. 62, III): §2 pub = 1º dia com expediente =
+    # qua 18/02 (Cinzas E dia util). §3 ini qui 19/02.
+    # 19(1),20(2),23(3),24(4),25(5) -> qua 25/02/2026.
     # O motor antigo dava 26/02 - um dia TARDE, prazo perdido.
-    assert _venc(date(2026, 2, 13), 5, "cpc", **DISP, **TJSP) == "2026-02-25"
+    assert _venc(date(2026, 2, 13), 5, "cpc", **DISP, **TRF3) == "2026-02-25"
+    # No TJSP o Carnaval nao vem do art. 62: pub seg 16/02, ini ter 17/02.
+    # 17(1),18(2),19(3),20(4),23(5) -> seg 23/02/2026. Dois dias uteis mais
+    # CEDO que o federal - a direcao segura de errar.
+    assert _venc(date(2026, 2, 13), 5, "cpc", **DISP, **TJSP) == "2026-02-23"
 
 
 # ==========================================================================
@@ -160,32 +191,147 @@ def test_defeito2_caso_medido_13_02_2026():
 #    IV 11/08, 1º e 2/11 e 8/12 (redacao da Lei 6.741/1979).
 # ==========================================================================
 def test_defeito3_feriados_do_art_62_estao_no_calendario():
-    cal = CalendarioForense(**TJSP)
-    _sem_expediente(cal, "2026-08-11", "2026-11-02", "2026-12-08")
+    fed = CalendarioForense(**TRF3)
+    _sem_expediente(fed, "2026-08-11", "2026-11-02", "2026-12-08")
     # 1º/11/2026 cai num domingo; use 2027 (segunda-feira) para provar o inciso.
-    _sem_expediente(CalendarioForense(**TJSP), "2027-11-01")
+    _sem_expediente(CalendarioForense(**TRF3), "2027-11-01")
     # Semana Santa 2026: Pascoa 05/04 -> quarta 01/04 ao domingo 05/04.
-    _sem_expediente(cal, "2026-04-01", "2026-04-02", "2026-04-03")
-    _com_expediente(cal, "2026-03-31", "2026-04-06")   # antes e depois: uteis
-    fer = feriados_forenses_nacionais(2026)
+    _sem_expediente(fed, "2026-04-01", "2026-04-02", "2026-04-03")
+    _com_expediente(fed, "2026-03-31", "2026-04-06")   # antes e depois: uteis
+    fer = feriados_forenses_federais(2026)
     assert date(2026, 2, 16) in fer and date(2026, 2, 17) in fer   # Carnaval
     assert date(2026, 2, 18) not in fer, "Cinzas NAO esta no art. 62"
 
 
 def test_defeito3_casos_medidos():
-    # disp seg 03/08/2026, 10d, TJSP: pub ter 04/08, ini qua 05/08.
-    # 05,06,07,10 | [11/08 art. 62, IV] | 12,13,14,17,18,19 -> 10º = 19/08/2026.
-    assert _venc(date(2026, 8, 3), 10, "cpc", **DISP, **TJSP) == "2026-08-19"
+    """Cada caso e medido DUAS vezes: no federal (art. 62 vale) e no estadual
+    (art. 62 nao vale). A diferenca entre as duas colunas E o bug de direcao."""
+    # disp seg 03/08/2026, 10d: pub ter 04/08, ini qua 05/08.
+    # federal:  05,06,07,10 | [11/08 art. 62, IV] | 12,13,14,17,18,19 -> 19/08.
+    assert _venc(date(2026, 8, 3), 10, "cpc", **DISP, **TRF3) == "2026-08-19"
+    # estadual: 05,06,07,10,11,12,13,14,17,18 -> 10º = ter 18/08/2026.
+    assert _venc(date(2026, 8, 3), 10, "cpc", **DISP, **TJSP) == "2026-08-18"
     # disp qui 26/11/2026, 10d: pub sex 27/11, ini seg 30/11.
-    # 30/11,01,02,03,04,07/12 | [08/12 art. 62, IV] | 09,10,11,14 -> 14/12/2026.
-    assert _venc(date(2026, 11, 26), 10, "cpc", **DISP, **TJSP) == "2026-12-14"
+    # federal:  30/11,01,02,03,04,07/12 | [08/12 art. 62, IV] | 09,10,11,14.
+    assert _venc(date(2026, 11, 26), 10, "cpc", **DISP, **TRF3) == "2026-12-14"
+    # estadual: 30/11,01,02,03,04,07,08,09,10,11/12 -> 10º = sex 11/12/2026.
+    assert _venc(date(2026, 11, 26), 10, "cpc", **DISP, **TJSP) == "2026-12-11"
     # disp seg 30/03/2026, 5d: pub ter 31/03. §3 manda para qua 01/04, que e
     # Semana Santa (art. 62, II, "compreendidos entre a quarta-feira e o
     # Domingo de Pascoa") -> ini seg 06/04. 06,07,08,09,10 -> sex 10/04/2026.
     # NOTA: a Parte I.2 da ESPEC dava 09/04 nessa linha, contando SO a quinta
     # santa. O inciso II abrange a quarta tambem; 10/04 e o que o texto legal
     # produz. Divergencia registrada de proposito, para o Vitor cruzar.
-    assert _venc(date(2026, 3, 30), 5, "cpc", **DISP, **TJSP) == "2026-04-10"
+    assert _venc(date(2026, 3, 30), 5, "cpc", **DISP, **TRF3) == "2026-04-10"
+    # estadual sem portaria: 01 e 02/04 sao uteis (03/04 e Sexta-feira Santa,
+    # feriado CIVIL nacional, esse fica). pub 31/03, ini qua 01/04:
+    # 01(1),02(2),[03 civil],06(3),07(4),08(5) -> qua 08/04/2026.
+    assert _venc(date(2026, 3, 30), 5, "cpc", **DISP, **TJSP) == "2026-04-08"
+
+
+# ==========================================================================
+# 3-B. DEFEITO 5 - o art. 62 e FEDERAL, nao nacional
+#      Lei 5.010/66, ementa: "Organiza a Justica Federal de primeira
+#      instancia". Art. 62: "serao feriados na Justica Federal, INCLUSIVE nos
+#      Tribunais Superiores". Aplicar isso num TJ inventa feriado que nao
+#      existe e adia o vencimento - a unica direcao que faz perder prazo.
+#      Texto conferido no planalto (l5010.htm).
+# ==========================================================================
+def test_defeito5_11_08_e_dia_util_no_TJ_e_nao_e_na_justica_federal():
+    """Dia do Advogado (art. 62, IV). O caso literal do bug."""
+    _com_expediente(CalendarioForense(tribunal="TJMG"), "2026-08-11")
+    _com_expediente(CalendarioForense(**TJSP), "2026-08-11")
+    for sigla in ("STJ", "STF", "TST", "TSE", "STM", "TRF6", "TRF1", "JFMG"):
+        _sem_expediente(CalendarioForense(tribunal=sigla), "2026-08-11")
+
+
+def test_defeito5_08_12_no_TJMG_vem_da_portaria_e_nao_do_art_62():
+    """08/12 fecha o TJMG - mas por LC estadual 59/2001, camada 4, nao pelo
+    art. 62, IV. Se o motivo citar a Lei 5.010/66, o vazamento voltou."""
+    motivo = _cal_trib("TJMG").motivo_sem_expediente(date(2026, 12, 8))
+    assert motivo, "08/12 deveria fechar o TJMG pela portaria (camada 4)"
+    assert "5.010" not in motivo, f"art. 62 vazou para o TJMG: {motivo}"
+    # No TJSP, que nao tem portaria carregada aqui, 08/12 e dia util.
+    _com_expediente(CalendarioForense(**TJSP), "2026-12-08")
+    # E na Justica Federal continua sendo art. 62, IV.
+    fed = CalendarioForense(tribunal="STJ").motivo_sem_expediente(date(2026, 12, 8))
+    assert "5.010" in fed and "62" in fed, fed
+
+
+def test_defeito5_semana_santa_so_alcanca_a_justica_federal():
+    # Pascoa 2026 = 05/04. Art. 62, II: quarta 01/04 ao domingo 05/04.
+    _sem_expediente(CalendarioForense(tribunal="TRF6"), "2026-04-01", "2026-04-02")
+    # No TJSP (sem portaria) 01 e 02/04 sao uteis. 03/04 continua fechado:
+    # Sexta-feira Santa e feriado CIVIL nacional, outra camada.
+    _com_expediente(CalendarioForense(**TJSP), "2026-04-01", "2026-04-02")
+    _sem_expediente(CalendarioForense(**TJSP), "2026-04-03")
+    # No TJMG a portaria (PC 1764/2026) cobre 01 e 02/04 - camada 4, nao 62.
+    motivo = _cal_trib("TJMG").motivo_sem_expediente(date(2026, 4, 1))
+    assert motivo and "1764" in motivo, f"esperava a portaria do TJMG: {motivo}"
+    assert "5.010" not in motivo, f"art. 62 vazou para o TJMG: {motivo}"
+    # E a conta fecha igual a federal: disp seg 30/03/2026, 5d, pub ter 31/03,
+    # ini seg 06/04 (01 e 02 pela portaria, 03 civil) -> sex 10/04/2026.
+    assert _venc(date(2026, 3, 30), 5, "cpc", **DISP, tribunal="TJMG") == "2026-04-10"
+
+
+def test_defeito5_recesso_continua_fechando_o_TJ_estadual():
+    """O inciso I NAO cai junto: 20/12-06/01 segue fechado em TJ por Res. CNJ
+    244/2016 art. 1º + portaria. Tirar isso junto seria o erro simetrico."""
+    for foro in (dict(tribunal="TJMG"), TJSP):
+        cal = CalendarioForense(**foro)
+        _sem_expediente(cal, "2026-12-21", "2026-12-22", "2026-12-23",
+                        "2026-12-28", "2026-12-30", "2027-01-04", "2027-01-06")
+        motivo = cal.motivo_sem_expediente(date(2026, 12, 21))
+        assert "244/2016" in motivo, motivo
+        assert "5.010" not in motivo, f"art. 62 vazou no recesso estadual: {motivo}"
+    # Na Justica Federal o recesso tem os DOIS fundamentos.
+    fed = CalendarioForense(tribunal="TRF6").motivo_sem_expediente(date(2026, 12, 21))
+    assert "244/2016" in fed and "5.010" in fed, fed
+
+
+def test_defeito5_caso_medido_04_08_2026_TJMG_bate_com_a_producao():
+    """O caso que expos o bug. disp ter 04/08/2026, 15 dias uteis, TJMG.
+    pub qua 05/08 (§2), ini qui 06/08 (§3).
+    06,07,10,11,12,13,14,17,18,19,20,21,24,25,26 -> 15º = qua 26/08/2026.
+    O plugin dava 27/08 (contava 11/08 como feriado); a producao do JurisTools
+    da 26/08 e esta certa."""
+    r = calcular(date(2026, 8, 4), 15, "cpc", **DISP, tribunal="TJMG")
+    assert r["publicacao"] == "2026-08-05"
+    assert r["inicioContagem"] == "2026-08-06"
+    assert r["dataVencimento"] == "2026-08-26", r["dataVencimento"]
+    assert not any("11/08" in e["data"] or "5.010" in e["motivo"]
+                   for e in r["excluidos"]), r["excluidos"]
+
+
+def test_defeito5_o_aviso_de_calendario_faltando_continua_saindo():
+    """Perder Carnaval e Semana Santa num TJ e a direcao SEGURA, mas so se o
+    advogado for avisado. Os dois avisos tem que aparecer."""
+    r = calcular(date(2026, 2, 13), 5, "cpc", **DISP, **TJSP)
+    assert any("Sem calendario do TJSP" in a for a in r["avisos"]), r["avisos"]
+    assert any("Carnaval" in a and "Semana Santa" in a for a in r["avisos"]), r["avisos"]
+    assert any("ESTADUAL" in a and "5.010/66 art. 62" in a for a in r["avisos"]), r["avisos"]
+    assert r["justica"] == "estadual" and r["art62Aplicado"] is False
+    # Na Justica Federal o aviso de escopo NAO aparece (nada foi tirado).
+    f = calcular(date(2026, 2, 13), 5, "cpc", **DISP, **TRF3)
+    assert not any("ESTADUAL" in a for a in f["avisos"]), f["avisos"]
+    assert f["justica"] == "federal" and f["art62Aplicado"] is True
+
+
+def test_defeito5_justica_explicita_vence_a_sigla():
+    """A sigla e deducao; --justica e declaracao. Declaracao ganha - inclusive
+    para orgao sem sigla conhecida (TRT, TRE, vara federal com nome exotico)."""
+    # TJMG forcado a federal: 11/08 volta a fechar.
+    _sem_expediente(CalendarioForense(tribunal="TJMG", federal=True), "2026-08-11")
+    # STJ forcado a estadual: 11/08 abre.
+    _com_expediente(CalendarioForense(tribunal="STJ", federal=False), "2026-08-11")
+    # Pela API publica, o mesmo caso de 03/08 muda de resposta.
+    assert _venc(date(2026, 8, 3), 10, "cpc", **DISP, tribunal="TJMG",
+                 justica="federal") == "2026-08-19"
+    assert _venc(date(2026, 8, 3), 10, "cpc", **DISP, tribunal="TJMG") == "2026-08-18"
+    # Sem sigla nenhuma, o motor assume ESTADUAL (a direcao segura).
+    assert not CalendarioForense().federal
+    _erro(lambda: calcular(date(2026, 8, 3), 10, "cpc", **DISP, justica="civel"),
+          "justica so aceita")
 
 
 # ==========================================================================
@@ -386,12 +532,12 @@ def test_art_229_par_2_autos_eletronicos_NAO_dobram():
     assert ele["prazoDias"] == 15
     assert ele["dataVencimento"] == base == "2026-07-27"
     assert any("229 §2º" in a for a in ele["avisos"]), ele["avisos"]
-    # Autos FISICOS: ai sim dobra (art. 229 caput). 30 dias uteis de 07/07,
-    # pulando 11/08 (art. 62, IV) -> ter 18/08/2026.
+    # Autos FISICOS: ai sim dobra (art. 229 caput). 30 dias uteis de 07/07 no
+    # TJMG. 11/08 e art. 62, IV: NAO se aplica a TJ -> seg 17/08/2026.
     fis = calcular(date(2026, 7, 3), 15, "cpc", **DISP, tribunal="TJMG",
                    litisconsortes=True, autos="fisicos")
     assert fis["prazoDias"] == 30
-    assert fis["dataVencimento"] == "2026-08-18"
+    assert fis["dataVencimento"] == "2026-08-17"
 
 
 # ==========================================================================
@@ -404,13 +550,18 @@ def test_protocolar_ate_e_D_menos_2_uteis():
 
 
 def test_resumo_traz_a_conta_inteira():
-    r = calcular(date(2026, 8, 3), 10, "cpc", **DISP, **TJSP)
+    r = calcular(date(2026, 8, 3), 10, "cpc", **DISP, **TRF3)
     s = r["resumo"]
     for pedaco in ("disponibilizado em 03/08/2026", "publicado em 04/08/2026",
                    "CPC art. 224 §2º", "inicio em 05/08/2026", "§3º",
                    "10 dias uteis", "CPC", "11/08", "vence em 19/08/2026"):
         assert pedaco in s, f"faltou '{pedaco}' no resumo:\n{s}"
     assert r["ressalva"], "a ressalva e obrigatoria em todo modo de saida"
+    # E o mesmo caso no TJSP nao pode NEM CITAR 11/08 na conta: se citar, o
+    # art. 62 voltou a vazar para a justica estadual.
+    e = calcular(date(2026, 8, 3), 10, "cpc", **DISP, **TJSP)
+    assert "11/08" not in e["resumo"], e["resumo"]
+    assert "vence em 18/08/2026" in e["resumo"], e["resumo"]
 
 
 def test_todo_regime_declara_a_base_legal():
@@ -421,16 +572,67 @@ def test_todo_regime_declara_a_base_legal():
 def test_vencimento_nunca_cai_em_dia_sem_expediente_nos_regimes_que_protraem():
     # Varredura, com oraculo INDEPENDENTE: uma lista literal de nao-uteis.
     # (A suite antiga usava o proprio _em_recesso como oraculo - circular.)
-    cal = CalendarioForense(**TJSP)
-    fechados = {date.fromisoformat(s) for s in (
-        "2026-12-25", "2027-01-01", "2026-11-02", "2026-12-08", "2026-08-11")}
-    d = date(2026, 7, 20)
-    while d <= date(2026, 12, 20):
-        venc = date.fromisoformat(_venc(d, 15, "cpc", **DISP, **TJSP))
-        assert venc.weekday() < 5, f"disp {d}: venceu no fim de semana ({venc})"
-        assert venc not in fechados, f"disp {d}: venceu em feriado ({venc})"
-        assert cal.tem_expediente(venc), f"disp {d}: venceu sem expediente ({venc})"
-        d += timedelta(days=1)
+    # 11/08 e 08/12 saem da lista do TJSP: sao art. 62, IV, que so alcanca a
+    # Justica Federal. A varredura federal logo abaixo cobre os dois.
+    casos = ((TJSP, ("2026-12-25", "2027-01-01", "2026-11-02")),
+             (TRF3, ("2026-12-25", "2027-01-01", "2026-11-02",
+                     "2026-12-08", "2026-08-11")))
+    for foro, isos in casos:
+        cal = CalendarioForense(**foro)
+        fechados = {date.fromisoformat(s) for s in isos}
+        d = date(2026, 7, 20)
+        while d <= date(2026, 12, 20):
+            venc = date.fromisoformat(_venc(d, 15, "cpc", **DISP, **foro))
+            assert venc.weekday() < 5, f"disp {d}: venceu no fim de semana ({venc})"
+            assert venc not in fechados, f"disp {d}: venceu em feriado ({venc})"
+            assert cal.tem_expediente(venc), f"disp {d}: venceu sem expediente ({venc})"
+            d += timedelta(days=1)
+
+
+# ==========================================================================
+# 9. Pacote pago: fallback pra pasta embutida e aviso da assinatura
+# ==========================================================================
+def test_pacote_pago_cai_na_pasta_embutida_quando_falta_o_tribunal():
+    """`--feriados <pasta paga>` com tribunal que nao esta la NAO pode virar
+    "sem calendario": tem que cair no que vem embutido no plugin (hoje, TJMG)."""
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        pasta = Path(tmp)                       # pasta paga, vazia de TJMG
+        (pasta / "TJXX.json").write_text(json.dumps(
+            {"tribunal": "TJXX", "vigencia": "2026", "feriados_forenses": []}),
+            encoding="utf-8")
+        cal = carregar_calendario(pasta, "TJMG")
+        assert cal, "nao caiu na pasta embutida: o TJMG sumiu do pacote"
+        assert "1764" in cal["fonte"], f"fonte inesperada: {cal['fonte']}"
+        # e o que ESTA no pacote pago continua vencendo do embutido
+        assert carregar_calendario(pasta, "TJXX")["feriados"] == {}
+        # tribunal que nao existe em lugar nenhum continua devolvendo vazio
+        assert carregar_calendario(pasta, "TJZZ") == {}
+
+
+def test_aviso_de_assinatura_em_d30_d7_e_vencida():
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        pasta = Path(tmp)
+        marca = pasta / "_assinatura.json"
+        hoje = date(2026, 8, 4)
+
+        assert aviso_assinatura(pasta, hoje) == "", "avisou sem assinatura nenhuma"
+
+        for dias, trecho in ((60, ""), (30, "30 dia"), (7, "7 dia"), (0, "0 dia")):
+            marca.write_text(json.dumps(
+                {"expira": (hoje + timedelta(days=dias)).isoformat()}), encoding="utf-8")
+            av = aviso_assinatura(pasta, hoje)
+            assert trecho in av, f"D-{dias}: esperava {trecho!r}, veio {av!r}"
+            if dias == 60:
+                assert av == "", f"D-60 nao devia avisar: {av!r}"
+
+        marca.write_text(json.dumps({"expira": "2026-07-01"}), encoding="utf-8")
+        assert "VENCIDA" in aviso_assinatura(pasta, hoje)
+
+        # marca ilegivel nunca vira erro no meio de um calculo de prazo
+        marca.write_text("{lixo", encoding="utf-8")
+        assert aviso_assinatura(pasta, hoje) == ""
 
 
 if __name__ == "__main__":

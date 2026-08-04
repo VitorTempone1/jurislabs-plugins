@@ -3,9 +3,11 @@
   "vigencia": "2026",
   "_fonte": "Portaria Conjunta nº 1764/PR/2026 (DJe 13/1/2026), art. 1º; LC estadual 59/2001, art. 313; Resolução Órgão Especial TJMG 458/2004.",
   "_atualizar": "Datas com emenda/ponte e o Dia do Funcionário Público mudam a cada ano. Atualizar anualmente pela Portaria Conjunta do calendário forense do TJMG. Cobre o ano de 2026; passado 2026 o motor avisa que o calendário está vencido.",
-  "_como_funciona": "feriados_forenses = camada 4 (portaria do tribunal). exclusoes = camada 5, datas que a lib holidays marca mas que TÊM expediente aqui (viram úteis). O recesso 20/12-06/01 e a suspensão de prazos 20/12-20/01 são DUAS janelas distintas e vivem no motor, não aqui. Carnaval (segunda e terça), Semana Santa (quarta a domingo), 11/08, 1º e 2/11 e 8/12 já entram pela camada 3 (Lei 5.010/66 art. 62). Feriado civil nacional e estadual entra pela lib holidays, categoria `public` APENAS.",
-
+  "_como_funciona": "feriados_forenses = camada 4 (portaria do tribunal). exclusoes = camada 5, datas que a lib holidays marca mas que TÊM expediente aqui (viram úteis). O recesso 20/12-06/01 e a suspensão de prazos 07-20/01 são DUAS janelas distintas e vivem no motor, não aqui. ATENÇÃO: a camada 3 (Lei 5.010/66 art. 62 — Semana Santa, Carnaval, 11/08, 1º e 2/11, 8/12) só vale na JUSTIÇA FEDERAL e nos Tribunais Superiores, pelo caput do próprio artigo. O TJMG é justiça ESTADUAL: nada disso entra automaticamente, e por isso Carnaval e Semana Santa estão listados aqui, pela portaria. Feriado civil nacional e estadual entra pela lib holidays, categoria `public` APENAS.",
   "feriados_forenses": [
+    "2026-02-16",
+    "2026-02-17",
+    "2026-02-18",
     "2026-04-01",
     "2026-04-02",
     "2026-04-20",
@@ -13,23 +15,22 @@
     "2026-12-07",
     "2026-12-08"
   ],
-
   "exclusoes": [
     "2026-10-28"
   ],
-
   "_referencia_2026": {
+    "2026-02-16": "Carnaval — segunda-feira (PC 1764/2026, art. 1º, I)",
+    "2026-02-17": "Carnaval — terça-feira (PC 1764/2026, art. 1º, I)",
+    "2026-02-18": "Quarta-feira de Cinzas (PC 1764/2026, art. 1º, I) — o TJMG suspende o dia INTEIRO; não é o meio-expediente de outros tribunais",
     "2026-04-01": "Quarta-feira da Semana Santa (PC 1764/2026, art. 1º, II)",
     "2026-04-02": "Quinta-feira da Semana Santa (PC 1764/2026, art. 1º, II)",
     "2026-04-20": "Emenda de feriado — Tiradentes cai na terça 21/04 (PC 1764/2026, art. 1º, III)",
+    "2026-10-28": "EXCLUSÃO: a lib marca Dia do Servidor em 28/10, mas o TJMG comemora em 30/10 (PC 1764/2026, art. 1º, V) — 28/10 é dia útil.",
     "2026-10-30": "Dia do Funcionário Público no âmbito de MG (PC 1764/2026, art. 1º, V)",
     "2026-12-07": "Emenda de feriado — Dia da Justiça cai na terça 08/12 (PC 1764/2026, art. 1º, VI)",
-    "2026-12-08": "Dia da Justiça — feriado forense (LC 59/2001, art. 313)",
-    "2026-10-28": "EXCLUSÃO: a lib marca Dia do Servidor em 28/10, mas o TJMG comemora em 30/10 (PC 1764/2026, art. 1º, V) — 28/10 é dia útil."
+    "2026-12-08": "Dia da Justiça — feriado forense (LC 59/2001, art. 313)"
   },
-
   "_nao_incluido": {
-    "quarta_de_cinzas": "NÃO consta da Lei 5.010/66 art. 62 e depende de portaria. A portaria do TJMG não foi conferida em fonte primária para este arquivo — se o calendário do ano suspender o expediente na Quarta de Cinzas, acrescentar aqui com a citação. Enquanto não estiver, o vencimento pode sair mais CEDO que o real.",
     "corpus_christi": "Não consta do art. 62 da Lei 5.010/66. Em 2026 cai em 04/06. A PC 1764/2026, art. 1º, IV, trata de suspensão em 05/06 SÓ na Comarca de BH e nas comarcas do interior onde for feriado municipal — por depender da comarca, não entra aqui (camada 6). Conferir por comarca."
   }
 }
