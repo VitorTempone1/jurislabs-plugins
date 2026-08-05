@@ -12,7 +12,7 @@
     {
       "name": "jurislabs-prazos",
       "source": "./plugins/jurislabs-prazos",
-      "description": "Calculadora de prazos processuais pelo CPC (dias uteis, recesso, feriados forenses). Apoio, nao substitui a conferencia no PJe."
+      "description": "Calculadora de prazos processuais MULTIRREGIME: CPC (dias uteis), CLT, CPP (dias CORRIDOS), JEC e administrativo. Termo inicial pela cadeia do art. 224, recesso forense e feriados nacionais/estaduais/forenses. Sem regime informado ele pergunta, nao chuta. Apoio, nao substitui a conferencia no PJe."
     },
     {
       "name": "jurislabs-br",
