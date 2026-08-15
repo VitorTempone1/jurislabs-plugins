@@ -1,1 +1,4 @@
-mcp[cli]>=1.2
+# O teto <2 nao e capricho: o mcp 2.0.0 removeu o mcp.server.fastmcp, que o
+# server.py importa. Sem o teto, instalacao nova resolve pra 2.x e o MCP morre
+# na hora com "CONNECTION_CLOSED", sem dizer o motivo.
+mcp[cli]>=1.2,<2
