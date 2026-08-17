@@ -1,7 +1,7 @@
 {
   "name": "jurislabs-br",
   "description": "MCP JurisLabs: fontes juridicas oficiais BR (DJEN, DataJud e LexML) direto no Claude. Consulta de publicacoes por OAB, andamento processual e legislacao. E apoio, nao substitui o PJe.",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "author": {
     "name": "JurisLabs",
     "url": "https://juristools.jurislabs.com.br"

@@ -21,9 +21,11 @@ import html as _html
 import json
 import os
 import re
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections import Counter
 from datetime import date, timedelta
 
 BROWSER_UA = (
@@ -220,6 +222,26 @@ def consultar_processo(numero: str, tribunal: str, timeout: float = 30) -> dict:
 # --------------------------------------------------------------------------- #
 DJEN_BASE = os.environ.get("DJEN_BASE_URL", "https://comunicaapi.pje.jus.br/api/v1")
 
+DJEN_POR_PAGINA = 100   # teto da API por pagina
+DJEN_MAX_PAGINAS = 20   # ate 2000 publicacoes por consulta
+DJEN_TETO_ITENS = 150   # itens devolvidos; o resumo_por_tipo conta TUDO
+
+
+def _sem_acento(s: str) -> str:
+    """Casefold sem acento, para casar 'precatório' com 'precatorio'."""
+    nfkd = unicodedata.normalize("NFKD", s or "")
+    return "".join(c for c in nfkd if not unicodedata.combining(c)).casefold()
+
+
+def _casa_termos(texto: str, termos: list[str]) -> bool:
+    """True se o texto contem QUALQUER um dos termos (sem acento, sem caixa).
+
+    Substring simples de proposito: termo vindo do usuario nao vira regex
+    (evita catastrophic backtracking num teor de milhares de caracteres).
+    """
+    alvo = _sem_acento(texto)
+    return any(t in alvo for t in termos)
+
 
 def _texto_limpo(t: str) -> str:
     """Tira HTML/estilo do teor e normaliza espacos (para o trecho e o teor)."""
@@ -247,13 +269,29 @@ def _normalizar_djen(item: dict, incluir_teor: bool = False) -> dict:
     return rec
 
 
+def _pagina_djen(params: dict, pagina: int, timeout: float) -> list[dict]:
+    corpo = _get(f"{DJEN_BASE}/comunicacao", params={**params, "pagina": pagina},
+                 headers={"Accept": "application/json",
+                          "Referer": "https://comunica.pje.jus.br/"}, timeout=timeout)
+    try:
+        dados = json.loads(corpo)
+    except json.JSONDecodeError as e:
+        raise FonteBloqueada(f"resposta nao-JSON (provavel bloqueio): {e}") from e
+    return dados.get("items") or []
+
+
 def consultar_djen(oab: str, uf: str, dias: int = 7, tribunal: str = "",
                    numero_processo: str = "", incluir_teor: bool = False,
-                   hoje: date | None = None, timeout: float = 30) -> dict:
+                   contendo: str = "", hoje: date | None = None,
+                   timeout: float = 30) -> dict:
     """Consulta PONTUAL de publicacoes/intimacoes por OAB no DJEN.
 
+    Pagina sozinho ate DJEN_MAX_PAGINAS (nao para nas 100 primeiras).
     Compacta por padrao (so um trecho de cada). Para o texto integral, filtre
     por numero_processo e passe incluir_teor=True.
+
+    contendo: termos separados por "|" procurados no TEOR (nao no rotulo),
+    sem acento e sem caixa. Ex.: "alvara|rpv|precatorio".
     """
     hoje = hoje or date.today()
     inicio = hoje - timedelta(days=max(1, dias) - 1)
@@ -262,31 +300,58 @@ def consultar_djen(oab: str, uf: str, dias: int = 7, tribunal: str = "",
         "ufOab": uf.strip().upper(),
         "dataDisponibilizacaoInicio": inicio.isoformat(),
         "dataDisponibilizacaoFim": hoje.isoformat(),
-        "itensPorPagina": 100,
-        "pagina": 1,
+        "itensPorPagina": DJEN_POR_PAGINA,
     }
     if tribunal:
         params["siglaTribunal"] = tribunal.strip().upper()
     if numero_processo:
         params["numeroProcesso"] = _so_digitos(numero_processo)
-    corpo = _get(f"{DJEN_BASE}/comunicacao", params=params,
-                 headers={"Accept": "application/json",
-                          "Referer": "https://comunica.pje.jus.br/"}, timeout=timeout)
-    try:
-        dados = json.loads(corpo)
-    except json.JSONDecodeError as e:
-        raise FonteBloqueada(f"resposta nao-JSON (provavel bloqueio): {e}") from e
-    itens = dados.get("items") or []
+
+    itens, truncou = [], False
+    for pagina in range(1, DJEN_MAX_PAGINAS + 1):
+        lote = _pagina_djen(params, pagina, timeout)
+        itens.extend(lote)
+        if len(lote) < DJEN_POR_PAGINA:
+            break
+    else:
+        truncou = True  # bateu o teto de paginas: pode haver mais periodo atras
+
+    encontradas = len(itens)
+    rotulos = [t.strip() for t in contendo.split("|") if t.strip()]
+    termos = [_sem_acento(t) for t in rotulos]
+    por_termo: Counter = Counter()
+    if termos:
+        casaram = []
+        for i in itens:
+            limpo = _texto_limpo(i.get("texto") or "")
+            achou = [r for r, t in zip(rotulos, termos) if _casa_termos(limpo, [t])]
+            if achou:
+                por_termo.update(achou)  # uma publicacao pode casar mais de um termo
+                casaram.append(i)
+        itens = casaram
+
+    resumo = Counter(i.get("tipoDocumento") or "(sem tipo)" for i in itens)
     # so traz o teor inteiro quando o resultado ja esta filtrado (poucos itens)
     teor = incluir_teor and (bool(numero_processo) or len(itens) <= 5)
-    pubs = [_normalizar_djen(i, incluir_teor=teor) for i in itens]
+    pubs = [_normalizar_djen(i, incluir_teor=teor) for i in itens[:DJEN_TETO_ITENS]]
+
     aviso = "Consulta pontual. O monitoramento diario automatico e do JurisTools."
-    if len(itens) >= 100:
-        aviso += " Teto de 100 por pagina atingido: pode haver mais (reduza o periodo ou filtre por tribunal/processo)."
+    if termos:
+        aviso += (f" Filtro no teor por {contendo!r}: {len(itens)} de {encontradas}"
+                  " publicacoes do periodo.")
+    if len(itens) > len(pubs):
+        aviso += (f" Lista cortada em {DJEN_TETO_ITENS} itens ({len(itens) - len(pubs)}"
+                  " omitidos); o total e o resumo_por_tipo contam TODAS.")
+    if truncou:
+        aviso += (f" Teto de {DJEN_MAX_PAGINAS} paginas atingido: pode haver mais"
+                  " publicacoes antigas no periodo (reduza os dias).")
     return {
         "oab": f"{params['numeroOab']}/{params['ufOab']}",
         "periodo": {"inicio": inicio.isoformat(), "fim": hoje.isoformat()},
-        "total": len(pubs),
+        "total": len(itens),
+        "resumo_por_tipo": dict(resumo.most_common()),
+        # soma dos termos pode passar o total: uma publicacao casa mais de um
+        "resumo_por_termo": dict(por_termo.most_common()) if termos else {},
         "publicacoes": pubs,
         "aviso": aviso,
         "ressalva": RESSALVA,

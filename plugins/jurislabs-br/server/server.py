@@ -32,15 +32,20 @@ def _seguro(fn, **kw) -> dict:
 
 @mcp.tool()
 def consultar_djen(oab: str, uf: str, dias: int = 7, tribunal: str = "",
-                   numero_processo: str = "", incluir_teor: bool = False) -> dict:
+                   numero_processo: str = "", incluir_teor: bool = False,
+                   contendo: str = "") -> dict:
     """Consulta PONTUAL de publicacoes/intimacoes de um advogado no DJEN (CNJ).
 
     Use quando o advogado pedir para ver publicacoes/intimacoes por OAB.
     NAO e monitoramento diario automatico (isso e do JurisTools SaaS).
 
-    Devolve uma LISTA COMPACTA (data, tipo, processo, classe e um trecho curto).
+    Devolve uma LISTA COMPACTA (data, tipo, processo, classe e um trecho curto)
+    mais um resumo_por_tipo com a contagem de TODAS as publicacoes achadas.
     Para ler o texto integral de uma publicacao, chame de novo com
     numero_processo preenchido e incluir_teor=True.
+
+    Para CONTAR um assunto (alvara, RPV, precatorio, penhora), use contendo:
+    o rotulo tipoDocumento quase nunca diz o assunto, o teor diz.
 
     Args:
         oab: numero da OAB (so os digitos).
@@ -49,9 +54,12 @@ def consultar_djen(oab: str, uf: str, dias: int = 7, tribunal: str = "",
         tribunal: opcional, filtra por sigla (ex.: TJMG).
         numero_processo: opcional, filtra por um processo (para ler o teor).
         incluir_teor: se True (com numero_processo), traz o texto integral.
+        contendo: termos separados por "|" procurados no TEOR, sem acento e
+            sem caixa. Ex.: "alvara|requisicao de pequeno valor|precatorio".
     """
     return _seguro(_consultar_djen, oab=oab, uf=uf, dias=dias, tribunal=tribunal,
-                   numero_processo=numero_processo, incluir_teor=incluir_teor)
+                   numero_processo=numero_processo, incluir_teor=incluir_teor,
+                   contendo=contendo)
 
 
 @mcp.tool()
