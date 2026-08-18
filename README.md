@@ -17,9 +17,9 @@ curl -LsSf https://raw.githubusercontent.com/VitorTempone1/jurislabs-plugins/mai
 /plugin install kit-advogado@jurislabs
 ```
 
-A ordem importa: o `kit-advogado` usa os dois de cima. Ao instalar o kit, o Claude vai te perguntar o nome do escritório, sua OAB e qual pasta do computador usar pra guardar os casos — responda e pronto.
+A ordem importa: o `kit-advogado` usa os dois de cima. Ao instalar o kit, o Claude vai te perguntar o nome do escritório, sua OAB e qual pasta do computador usar pra guardar os casos. Responda e pronto.
 
-Depois e so pedir em portugues, ex.: "vê minhas intimações de hoje", "calcula o prazo dessa sentença", "abre a pasta do cliente Fulano".
+Depois é só pedir em português, por exemplo: "vê minhas intimações de hoje", "calcula o prazo dessa sentença", "abre a pasta do cliente Fulano".
 
 > O `uv` e pre-requisito: o `jurislabs-br` sobe o MCP com `uv run` e o `jurislabs-prazos` usa `uv run` pra puxar os feriados (lib `holidays`) sozinho, sem mexer no Python do sistema.
 
@@ -29,7 +29,7 @@ Travou em algum ponto? O passo a passo detalhado (com o caminho manual, sem scri
 
 Isso resolve o que costuma travar num Mac "limpo": falta o `git`, falta o `uv`, ou o `uv` acabou de ser instalado mas o Claude Code (ou o Terminal) ainda não sabe onde ele está.
 
-**Antes de tudo: abra o app Terminal** (Lupa no canto superior direito → digite "Terminal" → Enter). É uma tela preta/branca com texto — é nela que você vai colar os comandos desta seção, **não** no Claude Code.
+**Antes de tudo: abra o app Terminal** (Lupa no canto superior direito → digite "Terminal" → Enter). É uma tela preta/branca com texto, e é nela que você vai colar os comandos desta seção, **não** no Claude Code.
 
 ### Caminho fácil: rodar o script
 
@@ -37,11 +37,11 @@ Isso resolve o que costuma travar num Mac "limpo": falta o `git`, falta o `uv`, 
    ```
    curl -LsSf https://raw.githubusercontent.com/VitorTempone1/jurislabs-plugins/main/install.sh | bash
    ```
-2. O script confere, um por um: Claude Code instalado, `git` instalado, `uv` instalado. Pra cada um que faltar, ele instala sozinho (sem `sudo`, sem pedir sua senha) ou te diz exatamente o que fazer — por exemplo, clicar em "Instalar" numa janela que abre sozinha, ou fechar e abrir o Terminal de novo.
+2. O script confere, um por um: Claude Code instalado, `git` instalado, `uv` instalado. Pra cada um que faltar, ele instala sozinho (sem `sudo`, sem pedir sua senha) ou te diz exatamente o que fazer, por exemplo clicar em "Instalar" numa janela que abre sozinha, ou fechar e abrir o Terminal de novo.
 4. Quando aparecer `✅ Tudo pronto.`, o script mostra os 4 comandos `/plugin`. Copie, abra o Claude Code e cole um de cada vez, na ordem em que aparecem.
 5. **Como saber que deu certo:** depois de `/plugin install jurislabs-br@jurislabs`, peça pro Claude "vê minhas intimações da OAB 123456/SP". Se ele chamar a ferramenta `consultar_djen` (em vez de dizer que não tem essa capacidade), o MCP está no ar.
 
-Se o script parar com `❌`, ele diz exatamente o comando pra rodar. Rode, feche e abra o Terminal de novo, e cole de novo o mesmo comando — pode rodar quantas vezes quiser, ele só faz o que ainda falta.
+Se o script parar com `❌`, ele diz exatamente o comando pra rodar. Rode, feche e abra o Terminal de novo, e cole de novo o mesmo comando. Pode rodar quantas vezes quiser, ele só faz o que ainda falta.
 
 ### Caminho manual (sem rodar script)
 
@@ -53,7 +53,7 @@ Se o script parar com `❌`, ele diz exatamente o comando pra rodar. Rode, feche
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
    Vai aparecer um texto dizendo onde ele foi instalado (geralmente `~/.local/bin`).
-4. **Feche o Terminal e abra um novo** (importante: sem isso o comando `uv` some para os próximos programas, inclusive o Claude Code). Confirme rodando `uv --version` — tem que mostrar um número, não erro.
+4. **Feche o Terminal e abra um novo** (importante: sem isso o comando `uv` some para os próximos programas, inclusive o Claude Code). Confirme rodando `uv --version`: tem que mostrar um número, não erro.
 5. **Se o Claude Code já estava aberto**, feche e abra ele de novo também, pelo mesmo motivo do passo anterior.
 6. **Agora sim**, no Claude Code, cole um de cada vez, nesta ordem:
    ```
@@ -62,7 +62,7 @@ Se o script parar com `❌`, ele diz exatamente o comando pra rodar. Rode, feche
    /plugin install jurislabs-prazos@jurislabs
    /plugin install kit-advogado@jurislabs
    ```
-7. **Confirme que funcionou** pedindo em português: "vê minhas intimações da OAB 123456/SP dos últimos 7 dias". Se o Claude responder com dados (ou com erro de bloqueio de IP, que é outro assunto — ver aviso no README do `jurislabs-br`), o MCP subiu certo.
+7. **Confirme que funcionou** pedindo em português: "vê minhas intimações da OAB 123456/SP dos últimos 7 dias". Se o Claude responder com dados (ou com erro de bloqueio de IP, que é outro assunto, ver o aviso no README do `jurislabs-br`), o MCP subiu certo.
 
 ## Plugins
 | Plugin | O que faz | Status |
@@ -93,4 +93,4 @@ Roadmap do pacote completo (escrita, documentos, fontes juridicas BR, produtivid
 As skills sao APOIO ao trabalho do advogado. Nenhuma substitui a conferencia oficial (PJe/autos) nem a decisao juridica. A palavra final e sempre do advogado.
 
 ## Publicacao
-Publicado como repo publico proprio: `VitorTempone1/jurislabs-plugins` — destino do QR da palestra.
+Publicado como repo publico proprio: `VitorTempone1/jurislabs-plugins`, destino do QR da palestra.
